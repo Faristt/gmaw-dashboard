@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GMAW Quality Monitoring Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], heading: ['Poppins', 'sans-serif'] },
+                    colors: { brand: { dark: '#0f172a', card: '#1e293b', primary: '#3b82f6', accent: '#10b981', warn: '#f59e0b', error: '#ef4444' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; overflow-x: hidden; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; transition: all 0.3s ease; }
+        .glass-card:hover { border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5); }
+        .text-gradient { background: linear-gradient(to right, #3b82f6, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .tab-content, .sub-tab-content { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .tab-content.active, .sub-tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .img-overlay { background: linear-gradient(to top, rgba(15,23,42,0.98) 0%, rgba(15,23,42,0.6) 50%, rgba(15,23,42,0.3) 100%); }
+        .card-img-overlay { background: linear-gradient(to top, rgba(15,23,42,1) 0%, rgba(15,23,42,0.7) 60%, rgba(15,23,42,0.2) 100%); }
+    </style>
+</head>
+<body class="antialiased selection:bg-brand-primary selection:text-white pb-20">
+
+    <nav class="sticky w-full z-50 top-0 shadow-lg" style="background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex-shrink-0 font-heading font-bold text-xl tracking-wider text-white flex items-center">
+                    <div class="w-8 h-8 rounded bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center mr-3 shadow-lg">
+                        <i class="fa-solid fa-bolt text-white text-sm"></i>
+                    </div>
+                    GMAW<span class="text-brand-accent">.Dash</span>
+                </div>
+                <div class="hidden md:flex space-x-2 bg-slate-800/80 p-1.5 rounded-xl border border-white/10">
+                    <button onclick="switchTab('overview')" id="btn-overview" class="tab-btn px-6 py-2 rounded-lg text-sm font-semibold bg-brand-primary text-white transition-all shadow-md">
+                        <i class="fa-solid fa-house mr-2"></i> Overview
+                    </button>
+                    <button onclick="switchTab('analytics')" id="btn-analytics" class="tab-btn px-6 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all">
+                        <i class="fa-solid fa-chart-pie mr-2"></i> Analytics
+                    </button>
+                    <button onclick="switchTab('team')" id="btn-team" class="tab-btn px-6 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all">
+                        <i class="fa-solid fa-users mr-2"></i> Team
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 lg:px-8 mt-8">
+
+        <div id="overview" class="tab-content active">
+            
+            <div class="relative rounded-3xl overflow-hidden mb-12 shadow-2xl border border-white/10 h-[400px] flex items-center justify-center text-center">
+                <img src="https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80" alt="Industrial Welding" class="absolute inset-0 w-full h-full object-cover">
+                <div class="absolute inset-0 img-overlay"></div>
+                <div class="relative z-10 px-6 max-w-4xl">
+                    <p class="text-brand-accent font-semibold tracking-widest uppercase text-xs mb-3">UTeM • Fakulti Teknologi Kejuruteraan</p>
+                    <h1 class="font-heading text-4xl lg:text-5xl font-bold mb-4 leading-tight text-white drop-shadow-lg">GMAW Quality Assurance <br><span class="text-gradient">Monitoring Dashboard</span></h1>
+                    <p class="text-slate-300 text-sm drop-shadow-md">Instructor: <strong class="text-white">Ts. Muhammad Khalis Bin Wahid</strong> &nbsp;|&nbsp; Course: <strong class="text-white">BMIK 2124 Equipment</strong></p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-8 mb-12">
+                
+                <div class="md:col-span-12 lg:col-span-7 space-y-8">
+                    <div class="glass-card p-8 bg-slate-800/50">
+                        <h2 class="font-heading text-2xl font-bold mb-4 text-white">Project Background</h2>
+                        <p class="text-slate-300 text-sm leading-relaxed mb-6">
+                            A welding company has been awarded a significant contract to manufacture 500 structural components using the Gas Metal Arc Welding (GMAW) process. To ensure the project meets the required quality standards, the quality assurance team is tasked with monitoring and inspecting every weld. Each weld must achieve the specified level of penetration, maintain appropriate heat input, and provide sufficient structural integrity.
+                        </p>
+                        <p class="text-slate-300 text-sm leading-relaxed">
+                            To support this process, engineers use real-time monitoring equipment such as a clamp meter, thermal imaging camera, Arc Welding Analyzer, and LVDT sensors. The data collected allows engineers to continuously assess welding performance, identify issues early, and ensure all components meet the required specifications.
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-8 bg-slate-800/50">
+                        <h2 class="font-heading text-2xl font-bold mb-6 text-white flex items-center">
+                            <i class="fa-solid fa-bullseye text-rose-500 mr-3"></i> Key Objectives
+                        </h2>
+                        <ul class="space-y-4">
+                            <li class="flex items-start"><div class="flex-shrink-0 w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 mt-0.5"><i class="fa-solid fa-check text-[10px] text-brand-accent"></i></div><p class="ml-3 text-sm text-slate-300">To understand the basic principles and procedures involved in measurement operations.</p></li>
+                            <li class="flex items-start"><div class="flex-shrink-0 w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 mt-0.5"><i class="fa-solid fa-check text-[10px] text-brand-accent"></i></div><p class="ml-3 text-sm text-slate-300">To measure and analyze important welding parameters during the welding process.</p></li>
+                            <li class="flex items-start"><div class="flex-shrink-0 w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 mt-0.5"><i class="fa-solid fa-check text-[10px] text-brand-accent"></i></div><p class="ml-3 text-sm text-slate-300">To develop hands-on skills in using clamp meters correctly and safely.</p></li>
+                            <li class="flex items-start"><div class="flex-shrink-0 w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 mt-0.5"><i class="fa-solid fa-check text-[10px] text-brand-accent"></i></div><p class="ml-3 text-sm text-slate-300">To utilize thermal imaging technology for collecting and monitoring welding data.</p></li>
+                            <li class="flex items-start"><div class="flex-shrink-0 w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 mt-0.5"><i class="fa-solid fa-check text-[10px] text-brand-accent"></i></div><p class="ml-3 text-sm text-slate-300">To propose suitable corrective actions to improve welding quality and prevent operational issues.</p></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="md:col-span-12 lg:col-span-5">
+                    <h2 class="font-heading text-2xl font-bold mb-6 text-white text-center">Industrial Diagnostic Equipment & Sensors</h2>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                        <div class="relative rounded-xl overflow-hidden h-32 group border border-white/10 shadow-lg">
+                            <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                            <div class="absolute inset-0 card-img-overlay"></div>
+                            <div class="absolute inset-0 p-4 flex flex-col justify-end">
+                                <h4 class="font-bold text-white text-sm flex justify-between items-center"><span class="text-brand-primary">01 / CLAMP METER</span></h4>
+                                <p class="text-[11px] text-slate-300 mt-1 leading-tight">Measures welding current (A) and arc voltage (V) non-intrusively during active arc state for power computations.</p>
+                            </div>
+                        </div>
+                        <div class="relative rounded-xl overflow-hidden h-32 group border border-white/10 shadow-lg">
+                            <img src="https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                            <div class="absolute inset-0 card-img-overlay"></div>
+                            <div class="absolute inset-0 p-4 flex flex-col justify-end">
+                                <h4 class="font-bold text-white text-sm flex justify-between items-center"><span class="text-rose-500">02 / THERMAL CAMERA</span></h4>
+                                <p class="text-[11px] text-slate-300 mt-1 leading-tight">Captures infrared radiation to map surface temperatures of the weld pool and Heat Affected Zone (HAZ) at ε=0.95.</p>
+                            </div>
+                        </div>
+                        <div class="relative rounded-xl overflow-hidden h-32 group border border-white/10 shadow-lg">
+                            <img src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                            <div class="absolute inset-0 card-img-overlay"></div>
+                            <div class="absolute inset-0 p-4 flex flex-col justify-end">
+                                <h4 class="font-bold text-white text-sm flex justify-between items-center"><span class="text-purple-500">03 / ARC WELDING ANALYZER</span></h4>
+                                <p class="text-[11px] text-slate-300 mt-1 leading-tight">Detects dynamic physical reaction loads (N) resulting from expanding base metal under intense arc constraints.</p>
+                            </div>
+                        </div>
+                        <div class="relative rounded-xl overflow-hidden h-32 group border border-white/10 shadow-lg">
+                            <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                            <div class="absolute inset-0 card-img-overlay"></div>
+                            <div class="absolute inset-0 p-4 flex flex-col justify-end">
+                                <h4 class="font-bold text-white text-sm flex justify-between items-center"><span class="text-brand-accent">04 / LVDT SENSOR</span></h4>
+                                <p class="text-[11px] text-slate-300 mt-1 leading-tight">Tracks sub-micron linear displacement (mm) to verify final structural geometric shrinkage distortions after cooling.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/10 h-[250px] group">
+                <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" class="absolute inset-0 w-full h-full object-cover">
+                <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
+                <div class="relative z-10 p-8 h-full flex flex-col justify-center grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-brand-primary font-bold mb-2 text-lg"><i class="fa-solid fa-microscope mr-2"></i>Engineering Evaluation</h3>
+                        <p class="text-sm text-slate-300 leading-relaxed drop-shadow-md">The real-time multi-sensor monitoring system applied in the GMAW process proved effective in detecting changes and irregularities during welding operations. The use of continuous process data allows potential welding defects to be identified and addressed at an early stage.</p>
+                    </div>
+                    <div>
+                        <h3 class="text-brand-accent font-bold mb-2 text-lg"><i class="fa-solid fa-lightbulb mr-2"></i>Future Recommendations</h3>
+                        <p class="text-sm text-slate-300 leading-relaxed drop-shadow-md">For improved operational performance, the use of multi-sensor monitoring technology should be adopted as part of routine manufacturing practices. Furthermore, scheduled sensor maintenance and calibration are essential to ensure measurement accuracy.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="analytics" class="tab-content">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-slate-800/40 p-4 rounded-xl border border-white/5">
+                <div>
+                    <h2 class="font-heading text-2xl font-bold">Diagnostics & Data</h2>
+                </div>
+                
+                <div class="flex bg-slate-900 p-1.5 rounded-lg border border-white/10 overflow-x-auto w-full md:w-auto shadow-inner">
+                    <button onclick="switchSubTab('sub-electrical')" id="btn-sub-electrical" class="sub-tab-btn px-5 py-2 rounded text-sm font-semibold bg-brand-primary text-white whitespace-nowrap shadow"><i class="fa-solid fa-bolt mr-2"></i>Electrical</button>
+                    <button onclick="switchSubTab('sub-thermal')" id="btn-sub-thermal" class="sub-tab-btn px-5 py-2 rounded text-sm font-semibold text-slate-400 hover:text-white whitespace-nowrap transition-colors"><i class="fa-solid fa-temperature-half mr-2"></i>Thermal</button>
+                    <button onclick="switchSubTab('sub-mechanical')" id="btn-sub-mechanical" class="sub-tab-btn px-5 py-2 rounded text-sm font-semibold text-slate-400 hover:text-white whitespace-nowrap transition-colors"><i class="fa-solid fa-compress mr-2"></i>Mechanical</button>
+                    <button onclick="switchSubTab('sub-table')" id="btn-sub-table" class="sub-tab-btn px-5 py-2 rounded text-sm font-semibold text-slate-400 hover:text-white whitespace-nowrap transition-colors"><i class="fa-solid fa-table mr-2"></i>Raw Data</button>
+                </div>
+            </div>
+
+            <div id="sub-electrical" class="sub-tab-content active">
+                <div class="bg-blue-500/10 border border-blue-500/30 p-4 rounded-lg mb-6 flex items-center justify-center shadow-inner">
+                    <i class="fa-solid fa-circle-info text-blue-400 mr-3"></i>
+                    <p class="text-sm text-blue-200">Real-time parameters derived via formula logic with <strong class="text-white">Travel Speed = 160 mm/min</strong>, <strong class="text-white">OCV = 75.52 V</strong>.</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="glass-card p-6 bg-slate-800/80">
+                        <h3 class="font-heading font-bold text-sm tracking-widest uppercase mb-4 text-slate-300">Plot A: Current vs Voltage</h3>
+                        <div class="h-[280px] w-full"><canvas id="plotA"></canvas></div>
+                    </div>
+                    <div class="glass-card p-6 bg-slate-800/80">
+                        <h3 class="font-heading font-bold text-sm tracking-widest uppercase mb-4 text-slate-300">Plot B: Current vs Power</h3>
+                        <div class="h-[280px] w-full"><canvas id="plotB"></canvas></div>
+                    </div>
+                    <div class="glass-card p-6 bg-slate-800/80 md:col-span-2 max-w-4xl mx-auto w-full">
+                        <h3 class="font-heading font-bold text-sm tracking-widest uppercase mb-4 text-slate-300">Plot C: Current vs Heat Input</h3>
+                        <div class="h-[280px] w-full"><canvas id="plotC"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sub-thermal" class="sub-tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+                    <div class="lg:col-span-4 space-y-6">
+                        <div class="glass-card p-6 bg-slate-800/80 h-full border-t-4 border-rose-500">
+                            <h2 class="font-heading text-xl font-bold mb-4 text-white">Topic 2 — Thermal Analysis</h2>
+                            <h3 class="font-semibold text-rose-400 mb-2 text-sm uppercase tracking-wider">Infrared Detection Principle & Configuration</h3>
+                            <p class="text-sm text-slate-300 leading-relaxed mb-6">Every matter above absolute zero emits electromagnetic infrared signatures. The thermal monitoring system targets a microbolometer array to capture long-wave infrared energy (LWIR, 8-14µm) directly transforming photons into electrical signal variations. Setting the profile configuration to an emissivity of <strong class="text-white">Ɛ = 0.95</strong> matches the surface properties of cooling mild steel.</p>
+                            
+                            <h3 class="font-semibold text-rose-400 mb-3 text-sm uppercase tracking-wider">Process Control Constraints</h3>
+                            <div class="bg-slate-900 p-4 rounded-lg border border-white/5 space-y-3 shadow-inner">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs text-slate-400">Process Mean Target (X̄)</span>
+                                    <strong class="text-white text-lg">496.99 °C</strong>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs text-slate-400">Average Subgroup Range (R̄)</span>
+                                    <strong class="text-white text-lg">8.82 °C</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-8 space-y-6">
+                        <div class="glass-card p-6 bg-slate-800/80">
+                            <h3 class="font-heading font-bold text-sm tracking-widest uppercase mb-4 text-slate-300 text-center">Thermal Imaging Camera Control Charts: Subgroup X-Bar Control</h3>
+                            <div class="h-[250px] w-full"><canvas id="chartXBar"></canvas></div>
+                        </div>
+                        <div class="glass-card p-6 bg-slate-800/80">
+                            <h3 class="font-heading font-bold text-sm tracking-widest uppercase mb-4 text-slate-300 text-center">Thermal Imaging Camera Control Charts: Subgroup R Control</h3>
+                            <div class="h-[250px] w-full"><canvas id="chartR"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sub-mechanical" class="sub-tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-8 glass-card p-6 bg-slate-800/80">
+                        <h3 class="font-heading font-bold text-sm tracking-widest uppercase mb-6 text-slate-300 text-center">Arc Welding Analyzer (Load) & LVDT (Displacement) Live Response</h3>
+                        <div class="h-[400px] w-full"><canvas id="chartMech"></canvas></div>
+                    </div>
+                    <div class="lg:col-span-4 space-y-6">
+                        <div class="glass-card p-6 bg-slate-800/80 border-t-4 border-brand-accent">
+                            <h4 class="font-heading text-lg font-bold mb-4 text-white">Key Findings & Technical QA Metrics</h4>
+                            <div class="mb-6 bg-slate-900 p-4 rounded border border-white/5 shadow-inner">
+                                <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Maximum Load Recorded</p>
+                                <p class="text-2xl font-bold text-brand-primary">145 N <span class="text-sm font-normal text-slate-500">@ 15 Seconds</span></p>
+                            </div>
+                            <div class="mb-6 bg-slate-900 p-4 rounded border border-white/5 shadow-inner">
+                                <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Residual Deflection Post Cooling</p>
+                                <p class="text-2xl font-bold text-brand-accent">0.48 mm <span class="text-sm font-normal text-slate-500">@ 60s</span></p>
+                            </div>
+                        </div>
+                        <div class="glass-card p-6 border border-amber-500/30 bg-amber-500/10 shadow-lg">
+                            <h4 class="font-bold text-amber-500 mb-2 flex items-center"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Critical Warning</h4>
+                            <p class="text-sm text-amber-100 leading-relaxed">Excessively high residual displacement indicates structural distortions, lowering assembly precision and causing structural integrity degradation.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sub-table" class="sub-tab-content">
+                <div class="glass-card p-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                        <h3 class="font-heading text-xl font-bold">30 Samples Electrical Measurement Parameters</h3>
+                        <div class="flex gap-2">
+                            <span class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-xs border border-blue-500/30">Speed: 160 mm/min</span>
+                            <span class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-xs border border-blue-500/30">OCV: 75.52 V</span>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto rounded-lg border border-white/5 shadow-xl">
+                        <table class="w-full text-sm text-left text-slate-300">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-900 sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-4">Sample</th>
+                                    <th class="px-6 py-4">Current (A)</th>
+                                    <th class="px-6 py-4">Voltage (V)</th>
+                                    <th class="px-6 py-4 text-brand-primary">Power (W)</th>
+                                    <th class="px-6 py-4 text-brand-accent">Heat Input (KJ/mm)</th>
+                                    <th class="px-6 py-4">Resistance (Ω)</th>
+                                    <th class="px-6 py-4">Voltage Drop (V)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body" class="divide-y divide-slate-700/50 bg-slate-800/50">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="team" class="tab-content">
+            <h2 class="font-heading text-3xl font-bold mb-8 text-center text-white drop-shadow-lg">Quality Assurance Team</h2>
+            
+            <div class="glass-card p-3 mb-10 w-full max-w-5xl mx-auto flex justify-center border border-white/10 shadow-2xl rounded-2xl overflow-hidden bg-slate-900 relative">
+                <img src="team.jpeg" alt="GMAW Quality Assurance Team" class="w-full h-auto max-h-[600px] object-cover rounded-xl shadow-inner relative z-10">
+                <div class="absolute -top-20 -left-20 w-64 h-64 bg-brand-primary rounded-full mix-blend-multiply filter blur-[100px] opacity-40"></div>
+                <div class="absolute -bottom-20 -right-20 w-64 h-64 bg-brand-accent rounded-full mix-blend-multiply filter blur-[100px] opacity-40"></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                <div class="glass-card p-6 text-center border-t-4 border-t-blue-500 shadow-xl relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-3 border border-blue-500/30"><i class="fa-solid fa-desktop text-blue-400"></i></div>
+                    <h3 class="font-bold text-white mb-1 text-sm">MUHAMMAD ASYRAF BIN ISMADY</h3>
+                    <p class="text-xs text-blue-400 font-mono mb-3">B142410343</p>
+                    <span class="bg-blue-500/10 text-blue-300 text-[10px] px-3 py-1 rounded-full border border-blue-500/20 uppercase tracking-widest">Dashboard Designer</span>
+                </div>
+                <div class="glass-card p-6 text-center border-t-4 border-t-rose-500 shadow-xl relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-b from-rose-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="w-12 h-12 rounded-full bg-rose-500/20 flex items-center justify-center mx-auto mb-3 border border-rose-500/30"><i class="fa-solid fa-temperature-half text-rose-400"></i></div>
+                    <h3 class="font-bold text-white mb-1 text-sm">ALIF AIMAN BIN YA</h3>
+                    <p class="text-xs text-rose-400 font-mono mb-3">B142410134</p>
+                    <span class="bg-rose-500/10 text-rose-300 text-[10px] px-3 py-1 rounded-full border border-rose-500/20 uppercase tracking-widest">Thermal Analyst</span>
+                </div>
+                <div class="glass-card p-6 text-center border-t-4 border-t-amber-500 shadow-xl relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-b from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-3 border border-amber-500/30"><i class="fa-solid fa-bolt text-amber-400"></i></div>
+                    <h3 class="font-bold text-white mb-1 text-sm">ZUL FIKRI HAKIM BIN HALIM</h3>
+                    <p class="text-xs text-amber-400 font-mono mb-3">B142410138</p>
+                    <span class="bg-amber-500/10 text-amber-300 text-[10px] px-3 py-1 rounded-full border border-amber-500/20 uppercase tracking-widest">Electrical Engineer</span>
+                </div>
+                <div class="glass-card p-6 text-center border-t-4 border-t-brand-accent shadow-xl relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-3 border border-emerald-500/30"><i class="fa-solid fa-gears text-emerald-400"></i></div>
+                    <h3 class="font-bold text-white mb-1 text-sm">AHMAD MUZZAMMIL BIN ROSLY</h3>
+                    <p class="text-xs text-brand-accent font-mono mb-3">B142410422</p>
+                    <span class="bg-emerald-500/10 text-emerald-300 text-[10px] px-3 py-1 rounded-full border border-emerald-500/20 uppercase tracking-widest">Mechanical Analyst</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Navigation Logic ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-primary', 'text-white', 'shadow-md');
+                btn.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-slate-700/50');
+            });
+            document.getElementById(tabId).classList.add('active');
+            let activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.add('bg-brand-primary', 'text-white', 'shadow-md');
+            activeBtn.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-slate-700/50');
+        }
+
+        function switchSubTab(tabId) {
+            document.querySelectorAll('.sub-tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-primary', 'text-white', 'shadow');
+                btn.classList.add('text-slate-400', 'hover:text-white');
+            });
+            document.getElementById(tabId).classList.add('active');
+            let activeSub = document.getElementById('btn-' + tabId);
+            activeSub.classList.add('bg-brand-primary', 'text-white', 'shadow');
+            activeSub.classList.remove('text-slate-400', 'hover:text-white');
+        }
+
+        // --- Data Construction ---
+        const rawCurrent = [185.2, 192.6, 178.4, 205.8, 168.3, 195.2, 210.4, 182.7, 220.1, 188.5, 215.3, 175.2, 200.6, 165.8, 225.4, 212.5, 198.3, 225.7, 189.6, 235.2, 175.8, 220.4, 195.5, 208.9, 182.3, 222.1, 190.4, 214.2, 172.5, 201.9];
+        const rawVoltage = [24.8, 25.1, 24.2, 25.9, 23.7, 25.3, 26.1, 24.5, 26.7, 24.7, 26.5, 23.9, 25.6, 23.4, 27.0, 26.3, 25.4, 27.1, 24.9, 28.0, 24.0, 26.8, 25.3, 26.0, 24.4, 26.9, 24.9, 26.4, 23.8, 25.7];
+        
+        // Exact Plot points (smooth curve mappings based on reference images)
+        const sortedCurrent = [165.8, 175.2, 185.2, 195.2, 205.8, 215.3, 225.4, 235.2];
+        const sortedVoltage = [23.4, 23.9, 24.8, 25.3, 25.9, 26.5, 27.0, 28.0];
+        const sortedPower = sortedCurrent.map((c, i) => (c * sortedVoltage[i]).toFixed(0));
+        const sortedHeat = sortedCurrent.map((c, i) => ((c * sortedVoltage[i] * 60) / 160000).toFixed(2));
+
+        // Populate Table
+        const tableBody = document.getElementById('table-body');
+        for(let i=0; i<30; i++) {
+            let c = rawCurrent[i]; let v = rawVoltage[i];
+            let p = (c * v).toFixed(2); let h = ((c * v * 60) / 160000).toFixed(3);
+            let r = (v / c).toFixed(3); let vd = (75.52 - v).toFixed(2);
+            tableBody.innerHTML += `<tr class="hover:bg-slate-700/50 transition-colors">
+                <td class="px-6 py-4 text-white font-medium">${i+1}</td>
+                <td class="px-6 py-4">${c}</td><td class="px-6 py-4">${v}</td>
+                <td class="px-6 py-4 font-bold text-brand-primary">${p}</td>
+                <td class="px-6 py-4 font-bold text-brand-accent">${h}</td>
+                <td class="px-6 py-4">${r}</td><td class="px-6 py-4">${vd}</td></tr>`;
+        }
+
+        // --- Chart Configs ---
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+        Chart.defaults.font.family = 'Inter';
+        
+        const lineStyle = { tension: 0, borderWidth: 3, pointRadius: 5, pointBackgroundColor: '#0f172a', pointBorderWidth: 2 };
+
+        window.onload = function() {
+            new Chart(document.getElementById('plotA'), {
+                type: 'line',
+                data: { labels: sortedCurrent, datasets: [{ data: sortedVoltage, borderColor: '#10b981', pointBorderColor: '#10b981', ...lineStyle }] },
+                options: { maintainAspectRatio: false, plugins: { legend: {display: false} }, scales: { y: { min: 23, max: 28, ticks: {stepSize: 1} } } }
+            });
+
+            new Chart(document.getElementById('plotB'), {
+                type: 'line',
+                data: { labels: sortedCurrent, datasets: [{ data: sortedPower, borderColor: '#10b981', pointBorderColor: '#10b981', ...lineStyle }] },
+                options: { maintainAspectRatio: false, plugins: { legend: {display: false} }, scales: { y: { min: 3500, max: 7000, ticks: {stepSize: 500} } } }
+            });
+
+            new Chart(document.getElementById('plotC'), {
+                type: 'line',
+                data: { labels: sortedCurrent, datasets: [{ data: sortedHeat, borderColor: '#10b981', pointBorderColor: '#10b981', ...lineStyle }] },
+                options: { maintainAspectRatio: false, plugins: { legend: {display: false} }, scales: { y: { min: 1.4, max: 2.6, ticks: {stepSize: 0.2} } } }
+            });
+
+            const labels25 = Array.from({length: 25}, (_, i) => i+1);
+            const xBarData = [485, 510, 470, 535, 450, 500, 520, 475, 505, 460, 528, 490, 518, 458, 510, 482, 532, 465, 542, 475, 520, 452, 530, 490, 515];
+            new Chart(document.getElementById('chartXBar'), {
+                type: 'line',
+                data: {
+                    labels: labels25,
+                    datasets: [
+                        { label: 'Subgroup Mean', data: xBarData, borderColor: '#10b981', pointBorderColor: '#10b981', ...lineStyle },
+                        { label: 'CL (496.99)', data: Array(25).fill(496.99), borderColor: '#94a3b8', borderDash: [5, 5], borderWidth: 2, pointRadius: 0 },
+                        { label: 'UCL (501.25)', data: Array(25).fill(501.25), borderColor: '#ef4444', borderDash: [2, 2], borderWidth: 2, pointRadius: 0 },
+                        { label: 'LCL (492.72)', data: Array(25).fill(492.72), borderColor: '#ef4444', borderDash: [2, 2], borderWidth: 2, pointRadius: 0 }
+                    ]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { labels: {usePointStyle: true} } }, scales: { y: { min: 440, max: 560 } } }
+            });
+
+            const rData = [13.5, 9.5, 9.8, 11.5, 6.5, 6.5, 9.2, 7.5, 8.0, 6.4, 9.5, 6.5, 9.8, 9.2, 8.8, 8.5, 9.8, 10.2, 9.0, 6.2, 9.2, 8.8, 7.8, 9.2, 8.8];
+            new Chart(document.getElementById('chartR'), {
+                type: 'line',
+                data: {
+                    labels: labels25,
+                    datasets: [
+                        { label: 'Subgroup Range', data: rData, borderColor: '#ef4444', pointBorderColor: '#ef4444', ...lineStyle },
+                        { label: 'CL (8.82)', data: Array(25).fill(8.82), borderColor: '#94a3b8', borderDash: [5, 5], borderWidth: 2, pointRadius: 0 },
+                        { label: 'UCL (17.68)', data: Array(25).fill(17.68), borderColor: '#ef4444', borderDash: [2, 2], borderWidth: 2, pointRadius: 0 }
+                    ]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { labels: {usePointStyle: true} } }, scales: { y: { min: 6, max: 18 } } }
+            });
+
+            new Chart(document.getElementById('chartMech'), {
+                type: 'line',
+                data: {
+                    labels: ['Arc Start', '5s', '10s', '15s', '20s', 'Arc Stop', '60s Cool'],
+                    datasets: [
+                        { label: 'Load (N)', data: [125, 142, 138, 145, 140, 135, 124], borderColor: '#10b981', pointBorderColor: '#10b981', yAxisID: 'y', ...lineStyle },
+                        { label: 'Displacement (mm)', data: [0.02, 0.15, 0.38, 0.62, 0.85, 1.02, 0.48], borderColor: '#94a3b8', pointBorderColor: '#94a3b8', yAxisID: 'y1', ...lineStyle }
+                    ]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: {usePointStyle: true} } },
+                    scales: {
+                        y: { type: 'linear', position: 'left', min: 100, max: 160 },
+                        y1: { type: 'linear', position: 'right', min: 0, max: 1.2, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        };
+    </script>
+</body>
+</html>
